@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  mysqldb:
+    image: mysql:5.7
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: 'chess_online_dev'
+      MYSQL_ROOT_PASSWORD: 'password'
+
+  rest_api:
+    image: nawajo/chess_rest_api
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      - mysqldb
+    environment:
+      SPRING_DATASOURCE_URL: 'jdbc:mysql://mysqldb:3306/chess_online_dev?   '
+      SPRING_PROFILES_ACTIVE: 'dev'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
