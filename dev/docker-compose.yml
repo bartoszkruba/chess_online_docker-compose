@@ -8,6 +8,13 @@ services:
       MYSQL_DATABASE: 'chess_online_dev'
       MYSQL_ROOT_PASSWORD: 'password'
 
+  rabbitmq:
+    image: itzg/rabbitmq-stomp
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: 'guest'
+      RABBITMQ_DEFAULT_PASS: 'guest'
+
   rest_api:
     image: nawajo/chess_rest_api
     ports:
@@ -15,9 +22,15 @@ services:
     restart: unless-stopped
     depends_on:
       - mysqldb
+      - rabbitmq
     environment:
-      SPRING_DATASOURCE_URL: 'jdbc:mysql://mysqldb:3306/chess_online_dev?   '
       SPRING_PROFILES_ACTIVE: 'dev'
+      SPRING_DATASOURCE_URL: 'jdbc:mysql://mysqldb:3306/chess_online_dev   '
+      SPRING_DATASOURCE_USERNAME: 'root'
+      SPRING_DATASOURCE_PASSWORD: 'password'
+      SPRING_RABBITMQ_HOST: 'rabbitmq'
+      SPRING_RABBITMQ_USERNAME: 'guest'
+      SPRING_RABBITMQ_PASSWORD: 'guest'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s

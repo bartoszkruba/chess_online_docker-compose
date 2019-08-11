@@ -1,14 +1,39 @@
 version: '3'
 
 services:
-  mysqldb:
-    image: mysql:5.7
-    restart: unless-stopped
+  mysql-galera:
+    image: severalnines/pxc56
     environment:
       MYSQL_DATABASE: 'chess_online_prod'
       MYSQL_ROOT_PASSWORD: 'password'
-    volumes:
-      - datavolume:/var/lib/mysql
+      XTRABACKUP_PASSWORD: 'password'
+      DISCOVERY_SERVICE: ''
+      CLUSTER_NAME: 'my_galera'
+    networks:
+      - database_net
+    deploy:
+      replicas: 1
+      restart-policy:
+        condition: on-failure
+          delay: 30s
+          max_attempts: 3
+          window: 60s
+        update_config:
+          parallelism: 1
+          delay: 10s
+          max_failure_ratio: 0.3
+
+
+  rabbitmq:
+    image: itzg/rabbitmq-stomp
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: 'guest'
+      RABBITMQ_DEFAULT_PASS: 'guest'
+    networks:
+      - rabbit_net
+    deploy:
+      replicas: 1
 
   rest_api:
     image: nawajo/chess_rest_api
@@ -17,14 +42,31 @@ services:
     restart: unless-stopped
     depends_on:
       - mysqldb
+      - rabbitmq
     environment:
-      SPRING_DATASOURCE_URL: 'jdbc:mysql://mysqldb:3306/chess_online_prod'
       SPRING_PROFILES_ACTIVE: 'prod'
+      SPRING_DATASOURCE_URL: 'jdbc:mysql://mysqldb:3306/chess_online_prod'
+      SPRING_DATASOURCE_USERNAME: 'root'
+      SPRING_DATASOURCE_PASSWORD: 'password'
+      SPRING_RABBITMQ_HOST: 'rabbitmq'
+      SPRING_RABBITMQ_USERNAME: 'guest'
+      SPRING_RABBITMQ_PASSWORD: 'guest'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - database_net
+      - rabbit_net
+    deploy:
+      replicas: 2
 
 volumes:
   datavolume:
+
+networks:
+  rabbit_net:
+    driver: overlay
+  database_net:
+    driver: overlay
