@@ -13,15 +13,15 @@ services:
       - database_net
     deploy:
       replicas: 1
-      restart-policy:
+      restart_policy:
         condition: on-failure
-          delay: 30s
-          max_attempts: 3
-          window: 60s
-        update_config:
-          parallelism: 1
-          delay: 10s
-          max_failure_ratio: 0.3
+        delay: 30s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        max_failure_ratio: 0.3
 
 
   rabbitmq:
